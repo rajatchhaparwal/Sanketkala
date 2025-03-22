@@ -18,6 +18,7 @@ export default function Navbar() {
 
         <div className="hidden md:flex space-x-6">
          <Link to={'/'} className="hover:text-amber-500">Home</Link>
+         <Link to={'/'} className="hover:text-amber-500">About</Link>
           <Link to={""} className="hover:text-amber-500">Features</Link>
           <Link to={"/Contact"} className="hover:text-amber-500">Contact</Link>
         </div>
@@ -42,6 +43,7 @@ export default function Navbar() {
         <div className="md:hidden mt-4 space-y-2 text-white">
           <Link to={""} className="block text-center p-2 hover:bg-gray-200" >Sign In</Link>
           <Link to={'/'} className="block text-center p-2 hover:bg-gray-200">Home</Link>
+          <Link to={""} className="block text-center p-2 hover:bg-gray-200">About</Link>
           <Link to={""} className="block text-center p-2 hover:bg-gray-200">Features</Link>
           <Link to={"/Contact"} className="block text-center p-2 hover:bg-gray-200">Contact</Link>
         </div>

@@ -3,9 +3,7 @@ import heroSectionImg from '../assets/herosectionimage.jpg'
 
 const HeroSection = () => {
   return (
-    <section className="relative sm:h-[38pc] md:h-[25pc] lg:h-[40pc] flex"   //bg-cover bg-no-repeat
-      style={{ backgroundImage: "" }}
-    >
+    <section className="relative sm:h-[38pc] md:h-[25pc] lg:h-[40pc] flex">
       <div className="container mx-auto px-6 lg:gap-20 flex flex-col md:flex-row justify-center  items-center">
         
         {/*image for md and sm screen*/}
