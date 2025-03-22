@@ -24,7 +24,7 @@ export default function Navbar() {
 
         <div className="flex items-center space-x-4">
 
-         <Link to={""} className="hover:text-amber-600" >Sign In</Link>
+         <Link to={""} className="hover:text-amber-600 hidden sm:block" >Sign In</Link>
 
           <Link to={""} className="border border-amber-500 hover:font-bold px-4 py-2 rounded-3xl ">
             Get Started
@@ -40,6 +40,7 @@ export default function Navbar() {
       {/* Mobile Menu */}
       {isOpen && (
         <div className="md:hidden mt-4 space-y-2 text-white">
+          <Link to={""} className="block text-center p-2 hover:bg-gray-200" >Sign In</Link>
           <Link to={'/'} className="block text-center p-2 hover:bg-gray-200">Home</Link>
           <Link to={""} className="block text-center p-2 hover:bg-gray-200">Features</Link>
           <Link to={"/Contact"} className="block text-center p-2 hover:bg-gray-200">Contact</Link>
