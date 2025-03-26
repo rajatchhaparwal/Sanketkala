@@ -9,7 +9,7 @@ const Footer = () => {
           
           {/* Column 1: Brand Info */}
           <div>
-            <h2 className="text-2xl font-bold">AI Resume Optimizer</h2>
+            <h2 className="text-2xl font-bold">Sanketkala</h2>
             <p className="mt-2 text-gray-400">Enhance your resume and LinkedIn profile with AI.</p>
           </div>
 
