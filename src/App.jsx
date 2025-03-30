@@ -10,12 +10,11 @@ import Getstarted from './pages/Getstarted';
 import About from './pages/About';
 import SignIn from './Auth/SignIn';
 import SignUp from './Auth/SignUp';
-import GenerateResume from './ResumeGeneration/GenerateResume'
-
-{/* to protect the routes from directly access to unAuthenticated person */}
-import ProtectedRoutes from './Auth/ProtectedRoutes'
+import GenerateResume from './ResumeGeneration/GenerateResume';
+import InterviewPage from './pages/InterviewPage';
 
 import {auth} from './Auth/firebase';
+
 
 const App = () =>{
 
@@ -33,6 +32,7 @@ const App = () =>{
       <Route path='/' element={<Home/>}/>
       <Route path='/GetStarted' element={<Getstarted/>}/>
       <Route path='/GenerateResume' element={<GenerateResume/>}/>
+      <Route path='/InterviewPage' element={<InterviewPage/>}/>
       <Route path='/Contact' element={<Contact/>}/>
       <Route path='/About' element={<About/>}/>
       <Route path='/SignIn' element={user ? <Navigate/>:<SignIn/>}/>
