@@ -29,13 +29,14 @@ export default function Navbar() {
 
         <div className="flex items-center space-x-4">
 
-         <Link to={"/SignIn"} className="hover:text-amber-600 hidden sm:block" >Sign In</Link>
+         { user? (<Link className="hidden" >Sign In</Link>): (<Link to={"/SignIn"} className="hover:text-amber-600 hidden sm:block" >Sign In</Link>)}
+
          {user ? (
   <Link to="/Getstarted" className="border border-amber-500 hover:font-bold px-4 py-2 rounded-3xl">
     Get Started
   </Link>
 ) : (
-  <Link to="/SignIn">Sign In</Link>
+  <Link to="/SignIn"  className="border border-amber-500 hover:font-bold px-4 py-2 rounded-3xl"> Get Started</Link>
 )}
 
           {/* Mobile Menu Button */}
