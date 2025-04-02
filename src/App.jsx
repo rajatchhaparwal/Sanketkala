@@ -13,17 +13,8 @@ import SignUp from './Auth/SignUp';
 import GenerateResume from './ResumeGeneration/GenerateResume';
 import InterviewPage from './pages/InterviewPage';
 
-import {auth} from './Auth/firebase';
-
 
 const App = () =>{
-
-  const [user,setUser] = useState();
-  useEffect(() => {
-    auth.onAuthStateChanged((user) => {
-      setUser(user);
-    });
-  });
 
   return (
     <>
@@ -35,7 +26,7 @@ const App = () =>{
       <Route path='/InterviewPage' element={<InterviewPage/>}/>
       <Route path='/Contact' element={<Contact/>}/>
       <Route path='/About' element={<About/>}/>
-      <Route path='/SignIn' element={user ? <Navigate/>:<SignIn/>}/>
+      <Route path='/SignIn' element={<SignIn/>}/>
       <Route path='/SignUp' element={<SignUp/>}/>
     </Routes>
     <ToastContainer />

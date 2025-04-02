@@ -2,8 +2,12 @@ import { useState } from "react";
 import {Link, Outlet} from "react-router-dom";
 import { Menu, X, } from "lucide-react";
 
+import useAuthUser from "../Auth/useAuthUser";
+
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  
+  const user = useAuthUser();
 
   return (
     <nav className="p-4 bg-neutral-800 ">
@@ -26,11 +30,14 @@ export default function Navbar() {
         <div className="flex items-center space-x-4">
 
          <Link to={"/SignIn"} className="hover:text-amber-600 hidden sm:block" >Sign In</Link>
+         {user ? (
+  <Link to="/Getstarted" className="border border-amber-500 hover:font-bold px-4 py-2 rounded-3xl">
+    Get Started
+  </Link>
+) : (
+  <Link to="/SignIn">Sign In</Link>
+)}
 
-          <Link to={"/Getstarted"} className="border border-amber-500 hover:font-bold px-4 py-2 rounded-3xl ">
-            Get Started
-          </Link>
-          
           {/* Mobile Menu Button */}
           <button className="md:hidden" onClick={() => setIsOpen(!isOpen)}>
             {isOpen ? <X size={24} /> : <Menu size={24} />}
@@ -41,9 +48,9 @@ export default function Navbar() {
       {/* Mobile Menu */}
       {isOpen && (
         <div className="md:hidden mt-4 space-y-2 text-white">
-          <Link to={""} className="block text-center p-2 hover:bg-gray-200" >Sign In</Link>
-          <Link to={''} className="block text-center p-2 hover:bg-gray-200">Home</Link>
-          <Link to={""} className="block text-center p-2 hover:bg-gray-200">About</Link>
+          <Link to={"/SignIn"} className="block text-center p-2 hover:bg-gray-200" >Sign In</Link>
+          <Link to={'/'} className="block text-center p-2 hover:bg-gray-200">Home</Link>
+          <Link to={'/About'} className="block text-center p-2 hover:bg-gray-200">About</Link>
         </div>
       )}
       <Outlet/>

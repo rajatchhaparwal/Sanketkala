@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import ResumeTemplate from './ResumeTemplate';
 
 export default function GenerateResume() {
   const [linkedin, setLinkedin] = useState("");
@@ -37,7 +38,7 @@ export default function GenerateResume() {
       <div className="mt-10 w-full max-w-4xl">
         <h3 className="text-xl font-semibold mb-4">Choose a Template</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-
+        
           {[1, 2, 3, 4, 5,6].map((template, index) => (
             <div
               key={index}
@@ -49,6 +50,7 @@ export default function GenerateResume() {
         </div>
       </div>
     </div>
+    <ResumeTemplate/>
     <Footer/>
     </>
   );
