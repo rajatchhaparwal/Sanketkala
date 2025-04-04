@@ -2,12 +2,12 @@ import { useState } from "react";
 import {Link, Outlet} from "react-router-dom";
 import { Menu, X, } from "lucide-react";
 
-import useAuthUser from "../Auth/useAuthUser";
+import useAuthUser from "../Auth/useAuthUser.js";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   
-  const user = useAuthUser();
+ const user = useAuthUser();
 
   return (
     <nav className="p-4 bg-neutral-800 ">
