@@ -1,8 +1,14 @@
 import React, { useState, useEffect } from "react";
+import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { auth, db } from "../Auth/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import Footer from "../components/Footer";
+import Navbar from "../components/Navbar";
 
 const AIInterview = () => {
+    const { type } = useParams();
+    const location = useLocation();
+    const navigate = useNavigate();
     const [ws, setWs] = useState(null);
     const [aiResponse, setAiResponse] = useState("");
     const [userResponse, setUserResponse] = useState("");
@@ -32,13 +38,20 @@ const AIInterview = () => {
 
     // Get Firebase Auth user
     useEffect(() => {
-        auth.onAuthStateChanged((currentUser) => {
+        const unsubscribe = auth.onAuthStateChanged((currentUser) => {
+            if (!currentUser) {
+                navigate('/login');
+            }
             setUser(currentUser);
         });
-    }, []);
+
+        return () => unsubscribe();
+    }, [navigate]);
 
     // Initialize WebSocket connection
     useEffect(() => {
+        if (!user) return;
+
         let reconnectAttempts = 0;
         const maxReconnectAttempts = 3;
         let reconnectTimeout;
@@ -56,7 +69,8 @@ const AIInterview = () => {
                 setConnectionError(false);
                 reconnectAttempts = 0;
                 socket.send(JSON.stringify({
-                    type: "start_interview"
+                    type: "start_interview",
+                    interviewType: type
                 }));
                 setIsInterviewActive(true);
             };
@@ -67,7 +81,6 @@ const AIInterview = () => {
                     switch (response.type) {
                         case "ai_response":
                             setAiResponse(response.content);
-                            // Cancel any ongoing speech before starting new one
                             cancelSpeech();
                             speak(response.content);
                             if (user) {
@@ -90,7 +103,7 @@ const AIInterview = () => {
             socket.onclose = (event) => {
                 console.log("WebSocket disconnected", event.code, event.reason);
                 setIsInterviewActive(false);
-                cancelSpeech(); // Cancel any ongoing speech when connection closes
+                cancelSpeech();
                 
                 if (event.code !== 1000 && event.code !== 1001) {
                     if (reconnectAttempts < maxReconnectAttempts) {
@@ -127,9 +140,9 @@ const AIInterview = () => {
                 }));
                 socket.close();
             }
-            cancelSpeech(); // Cancel any ongoing speech when component unmounts
+            cancelSpeech();
         };
-    }, [user]);
+    }, [user, type]);
 
     // Request microphone permission
     const requestMicrophonePermission = async () => {
@@ -267,87 +280,88 @@ const AIInterview = () => {
 
     return (
         <>
-            <div className="flex flex-col lg:flex-row justify-center gap-8 p-4 bg-gray-100">
-                {/* AI Interviewer Card */}
-                <div className="flex flex-col items-center justify-center">
-                    <div className="bg-white max-w-xs md:max-w-sm lg:w-[400px] text-center shadow-lg rounded-lg p-6 w-full transition-transform duration-300 hover:shadow-xl hover:-translate-y-2">
-                        <img
-                            src="https://cdn-icons-png.flaticon.com/512/9165/9165147.png"
-                            alt="AI Interviewer"
-                            className="h-32 w-32 lg:h-40 lg:w-40 mx-auto rounded-md mb-4 animate-pulse"
-                        />
-                        <h2 className="text-xl lg:text-2xl font-semibold mb-4">AI Interviewer</h2>
-                        <div className="bg-gray-100 p-4 rounded-lg min-h-[100px]">
-                            <p className="text-gray-800">{aiResponse}</p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* User Card */}
-                <div className="flex flex-col items-center justify-center">
-                    <div className="bg-white max-w-xs md:max-w-sm lg:w-[400px] text-center shadow-lg rounded-lg p-6 w-full transition-transform duration-300 hover:shadow-xl hover:-translate-y-2">
-                        <img
-                            src="https://randomuser.me/api/portraits/men/46.jpg"
-                            alt="User"
-                            className="h-32 w-32 lg:h-40 lg:w-40 mx-auto rounded-full mb-4"
-                        />
-                        <h2 className="text-xl lg:text-2xl font-semibold mb-4">User</h2>
-                        <div className="bg-gray-100 p-4 rounded-lg min-h-[100px]">
-                            <p className="text-gray-800">{userResponse}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div className="flex flex-col items-center justify-center text-center mt-8">
-                {user ? (
-                    <>
-                        {!hasSpeechSupport ? (
-                            <p className="text-red-600 mb-4">
-                                Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari.
+            <Navbar />
+            <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 py-8">
+                <div className="container mx-auto px-4">
+                    <div className="max-w-4xl mx-auto">
+                        <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+                            <h1 className="text-3xl font-bold text-gray-800 mb-2">
+                                {type ? type.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') : 'Technical Interview'}
+                            </h1>
+                            <p className="text-gray-600 mb-6">
+                                Your AI interviewer will ask questions related to {type ? type.replace(/-/g, ' ') : 'technical topics'}
                             </p>
-                        ) : (
-                            <>
-                                <div className="flex gap-4">
-                                    <button
-                                        onClick={listenToUser}
-                                        disabled={!isInterviewActive || isListening}
-                                        className={`px-6 py-2 rounded-lg shadow-md transition duration-300 ${
-                                            !isInterviewActive || isListening
-                                                ? "bg-gray-400 cursor-not-allowed"
-                                                : "bg-blue-500 hover:bg-blue-700 text-white"
-                                        }`}
-                                    >
-                                        {isListening ? "Listening..." : "Speak"}
-                                    </button>
-                                    {isSpeaking && (
-                                        <button
-                                            onClick={cancelSpeech}
-                                            className="px-6 py-2 rounded-lg shadow-md transition duration-300 bg-red-500 hover:bg-red-700 text-white"
-                                        >
-                                            Stop AI Speaking
-                                        </button>
-                                    )}
+
+                            {/* Connection Status */}
+                            {connectionError ? (
+                                <div className="bg-red-50 text-red-600 p-4 rounded-lg mb-6">
+                                    Connection error. Please check your internet connection and try again.
                                 </div>
-                                {speechError && (
-                                    <p className="mt-4 text-red-600">{speechError}</p>
-                                )}
-                            </>
-                        )}
-                        {!isInterviewActive && !speechError && (
-                            <div className="mt-4">
-                                {connectionError ? (
-                                    <p className="text-red-600">Failed to connect to the interview server. Please try again later.</p>
-                                ) : (
-                                    <p className="text-amber-600">Please wait for the interview to start...</p>
-                                )}
+                            ) : !isInterviewActive ? (
+                                <div className="bg-yellow-50 text-yellow-600 p-4 rounded-lg mb-6">
+                                    Please wait for the interview to start...
+                                </div>
+                            ) : null}
+
+                            {/* Speech Support Warning */}
+                            {!hasSpeechSupport && (
+                                <div className="bg-yellow-50 text-yellow-600 p-4 rounded-lg mb-6">
+                                    Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari.
+                                </div>
+                            )}
+
+                            {/* Speech Error */}
+                            {speechError && (
+                                <div className="bg-red-50 text-red-600 p-4 rounded-lg mb-6">
+                                    {speechError}
+                                </div>
+                            )}
+
+                            {/* AI Response Card */}
+                            <div className="bg-blue-50 rounded-lg p-6 mb-6">
+                                <div className="flex items-center mb-4">
+                                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                        <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                        </svg>
+                                    </div>
+                                    <h3 className="ml-3 text-lg font-semibold text-blue-900">AI Interviewer</h3>
+                                </div>
+                                <p className="text-blue-800">{aiResponse || "Preparing your interview questions..."}</p>
                             </div>
-                        )}
-                    </>
-                ) : (
-                    <p className="text-red-600 font-semibold">Please log in to start the interview.</p>
-                )}
+
+                            {/* User Response Card */}
+                            <div className="bg-gray-50 rounded-lg p-6">
+                                <div className="flex items-center mb-4">
+                                    <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                                        <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        </svg>
+                                    </div>
+                                    <h3 className="ml-3 text-lg font-semibold text-gray-900">Your Response</h3>
+                                </div>
+                                <p className="text-gray-800 mb-4">{userResponse || "Your response will appear here..."}</p>
+                                
+                                <button
+                                    onClick={listenToUser}
+                                    disabled={!isInterviewActive || isListening || !hasSpeechSupport}
+                                    className={`w-full flex items-center justify-center px-4 py-2 rounded-lg ${
+                                        isListening
+                                            ? 'bg-red-500 hover:bg-red-600'
+                                            : 'bg-blue-500 hover:bg-blue-600'
+                                    } text-white transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed`}
+                                >
+                                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                                    </svg>
+                                    {isListening ? 'Stop Speaking' : 'Start Speaking'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
+            <Footer />
         </>
     );
 };
