@@ -107,6 +107,7 @@ function SignUp() {
             disabled={isLoading}
           >
             {isLoading ? "Creating account..." : "Sign Up"}
+            <Link to={"/getStarted"} className="text-blue-400 hover:underline">Get Started</Link>
           </button>
     
           <div className="flex gap-1 mt-3">
