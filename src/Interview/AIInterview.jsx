@@ -9,6 +9,7 @@ const AIInterview = () => {
     const [user, setUser] = useState(null);
     const [isInterviewActive, setIsInterviewActive] = useState(false);
     const [isListening, setIsListening] = useState(false);
+    const [connectionError, setConnectionError] = useState(false);
 
     // Get Firebase Auth user
     useEffect(() => {
@@ -19,10 +20,16 @@ const AIInterview = () => {
 
     // Initialize WebSocket connection
     useEffect(() => {
-        const socket = new WebSocket("ws://localhost:3000/ws");
+        const wsUrl = process.env.NODE_ENV === 'production' 
+            ? 'wss://sanketkala-server.vercel.app/ws'  // Production URL
+            : 'ws://localhost:3000/ws';  // Development URL
+
+        console.log('Connecting to WebSocket at:', wsUrl);
+        const socket = new WebSocket(wsUrl);
 
         socket.onopen = () => {
             console.log("WebSocket connected");
+            setConnectionError(false);
             // Start the interview when connection is established
             socket.send(JSON.stringify({
                 type: "start_interview"
@@ -46,6 +53,7 @@ const AIInterview = () => {
                         break;
                     case "error":
                         console.error("Error:", response.content);
+                        setAiResponse(response.content);
                         break;
                 }
             } catch (error) {
@@ -56,10 +64,13 @@ const AIInterview = () => {
         socket.onclose = () => {
             console.log("WebSocket disconnected");
             setIsInterviewActive(false);
+            setConnectionError(true);
         };
 
         socket.onerror = (error) => {
             console.error("WebSocket error:", error);
+            setConnectionError(true);
+            setIsInterviewActive(false);
         };
 
         setWs(socket);
@@ -184,7 +195,13 @@ const AIInterview = () => {
                             {isListening ? "Listening..." : "Speak"}
                         </button>
                         {!isInterviewActive && (
-                            <p className="mt-4 text-red-600">Please wait for the interview to start...</p>
+                            <div className="mt-4">
+                                {connectionError ? (
+                                    <p className="text-red-600">Failed to connect to the interview server. Please try again later.</p>
+                                ) : (
+                                    <p className="text-amber-600">Please wait for the interview to start...</p>
+                                )}
+                            </div>
                         )}
                     </>
                 ) : (
