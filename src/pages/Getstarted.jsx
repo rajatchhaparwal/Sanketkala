@@ -42,7 +42,7 @@ const Getstarted = () => {
     if (value === 'interview') {
       navigate('/interviews');
     } else if (value === 'resume') {
-      navigate('/resume');
+      navigate('/GenerateResume');
     } else if (value === 'linkedin') {
       navigate('/linkedin');
     }
