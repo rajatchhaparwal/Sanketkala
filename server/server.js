@@ -9,18 +9,48 @@ dotenv.config();
 const app = express();
 const server = http.createServer(app);
 
-const wss = new WebSocketServer({ server, path: "/ws" });
-app.use(cors());
+// Enable CORS for all routes
+app.use(cors({
+  origin: ['http://localhost:5173', 'https://sanketkala.vercel.app'],
+  methods: ['GET', 'POST'],
+  credentials: true
+}));
+
 app.use(express.json());
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
+const wss = new WebSocketServer({ 
+  server,
+  path: "/ws",
+  clientTracking: true,
+  perMessageDeflate: false
+});
+
 const GEMINI_API_KEY = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-const MAX_CONNECTIONS = 10; // Limit concurrent connections
+const MAX_CONNECTIONS = 10;
 let activeConnections = 0;
 
 // Store interview context for each connection
 const interviewContexts = new Map();
 
-wss.on("connection", (ws) => {
+// Ping all clients every 30 seconds to keep connections alive
+setInterval(() => {
+  wss.clients.forEach((client) => {
+    try {
+      client.ping();
+    } catch (e) {
+      console.error('Error pinging client:', e);
+    }
+  });
+}, 30000);
+
+wss.on("connection", (ws, req) => {
+    console.log('Client connecting from:', req.headers.origin);
+    
     if (activeConnections >= MAX_CONNECTIONS) {
         ws.close(1008, "Server is at maximum capacity");
         return;
@@ -32,9 +62,23 @@ wss.on("connection", (ws) => {
     // Initialize interview context for this connection
     const context = {
         messages: [],
-        isInterviewActive: false
+        isInterviewActive: false,
+        lastPing: Date.now()
     };
     interviewContexts.set(ws, context);
+
+    // Send immediate welcome message
+    ws.send(JSON.stringify({
+        type: "status",
+        content: "Connected to interview server"
+    }));
+
+    ws.on("pong", () => {
+        const ctx = interviewContexts.get(ws);
+        if (ctx) {
+            ctx.lastPing = Date.now();
+        }
+    });
 
     ws.on("message", async (message) => {
         try {
@@ -46,8 +90,8 @@ wss.on("connection", (ws) => {
                     context.isInterviewActive = true;
                     context.messages = [];
                     ws.send(JSON.stringify({
-                        type: "status",
-                        content: "Interview started. You can begin speaking."
+                        type: "ai_response",
+                        content: "Hello! I'm your AI interviewer. Let's begin. Could you please introduce yourself and tell me what position you're interviewing for?"
                     }));
                     break;
 
@@ -64,7 +108,7 @@ wss.on("connection", (ws) => {
                     context.messages.push({ role: "user", content });
 
                     const analysisPrompt = `You are an AI interviewer. The candidate said: "${content}". 
-                    Provide constructive feedback and ask a relevant follow-up question. 
+                    Provide constructive feedback and ask a relevant follow-up question. Keep your response concise and natural.
                     Previous context: ${JSON.stringify(context.messages.slice(-3))}`;
 
                     try {
@@ -74,7 +118,7 @@ wss.on("connection", (ws) => {
                             { headers: { "Content-Type": "application/json" } }
                         );
 
-                        const aiFeedback = geminiResponse.data?.candidates?.[0]?.content?.parts?.[0]?.text || "No response";
+                        const aiFeedback = geminiResponse.data?.candidates?.[0]?.content?.parts?.[0]?.text || "Could you please repeat that?";
                         context.messages.push({ role: "assistant", content: aiFeedback });
                         
                         ws.send(JSON.stringify({
@@ -85,7 +129,7 @@ wss.on("connection", (ws) => {
                         console.error("Error fetching AI response:", error);
                         ws.send(JSON.stringify({
                             type: "error",
-                            content: "AI is not available right now. Please try again."
+                            content: "I'm having trouble understanding. Could you please repeat that?"
                         }));
                     }
                     break;
@@ -108,7 +152,7 @@ wss.on("connection", (ws) => {
             console.error("Error processing message:", error);
             ws.send(JSON.stringify({
                 type: "error",
-                content: "Error processing your message"
+                content: "Error processing your message. Please try again."
             }));
         }
     });
@@ -119,7 +163,6 @@ wss.on("connection", (ws) => {
         console.log(`Client disconnected. Total connections: ${activeConnections}`);
     });
 
-    // Handle errors
     ws.on("error", (error) => {
         console.error("WebSocket error:", error);
         activeConnections--;
@@ -127,4 +170,18 @@ wss.on("connection", (ws) => {
     });
 });
 
-server.listen(3000, () => console.log("Server running on port 3000"));
+// Clean up stale connections every minute
+setInterval(() => {
+    const now = Date.now();
+    wss.clients.forEach((client) => {
+        const context = interviewContexts.get(client);
+        if (context && now - context.lastPing > 60000) {
+            client.terminate();
+            interviewContexts.delete(client);
+            activeConnections--;
+        }
+    });
+}, 60000);
+
+const port = process.env.PORT || 3000;
+server.listen(port, () => console.log(`Server running on port ${port}`));

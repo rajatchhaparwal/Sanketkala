@@ -20,61 +20,87 @@ const AIInterview = () => {
 
     // Initialize WebSocket connection
     useEffect(() => {
-        const wsUrl = process.env.NODE_ENV === 'production' 
-            ? 'wss://sanketkala-server.vercel.app/ws'  // Production URL
-            : 'ws://localhost:3000/ws';  // Development URL
+        let reconnectAttempts = 0;
+        const maxReconnectAttempts = 3;
+        let reconnectTimeout;
 
-        console.log('Connecting to WebSocket at:', wsUrl);
-        const socket = new WebSocket(wsUrl);
+        const connectWebSocket = () => {
+            const wsUrl = window.location.hostname === 'localhost'
+                ? 'ws://localhost:3000/ws'
+                : `wss://${window.location.hostname}/ws`;
 
-        socket.onopen = () => {
-            console.log("WebSocket connected");
-            setConnectionError(false);
-            // Start the interview when connection is established
-            socket.send(JSON.stringify({
-                type: "start_interview"
-            }));
-            setIsInterviewActive(true);
-        };
+            console.log('Connecting to WebSocket at:', wsUrl);
+            const socket = new WebSocket(wsUrl);
 
-        socket.onmessage = (event) => {
-            try {
-                const response = JSON.parse(event.data);
-                switch (response.type) {
-                    case "ai_response":
-                        setAiResponse(response.content);
-                        speak(response.content);
-                        if (user) {
-                            saveToFirestore(user.email, "AI", response.content);
-                        }
-                        break;
-                    case "status":
-                        console.log("Status:", response.content);
-                        break;
-                    case "error":
-                        console.error("Error:", response.content);
-                        setAiResponse(response.content);
-                        break;
+            socket.onopen = () => {
+                console.log("WebSocket connected");
+                setConnectionError(false);
+                reconnectAttempts = 0;
+                // Start the interview when connection is established
+                socket.send(JSON.stringify({
+                    type: "start_interview"
+                }));
+                setIsInterviewActive(true);
+            };
+
+            socket.onmessage = (event) => {
+                try {
+                    const response = JSON.parse(event.data);
+                    switch (response.type) {
+                        case "ai_response":
+                            setAiResponse(response.content);
+                            speak(response.content);
+                            if (user) {
+                                saveToFirestore(user.email, "AI", response.content);
+                            }
+                            break;
+                        case "status":
+                            console.log("Status:", response.content);
+                            break;
+                        case "error":
+                            console.error("Error:", response.content);
+                            setAiResponse(response.content);
+                            break;
+                    }
+                } catch (error) {
+                    console.error("Error parsing WebSocket message:", error);
                 }
-            } catch (error) {
-                console.error("Error parsing WebSocket message:", error);
-            }
+            };
+
+            socket.onclose = (event) => {
+                console.log("WebSocket disconnected", event.code, event.reason);
+                setIsInterviewActive(false);
+                
+                // Only attempt to reconnect if it wasn't a normal closure
+                if (event.code !== 1000 && event.code !== 1001) {
+                    if (reconnectAttempts < maxReconnectAttempts) {
+                        console.log(`Attempting to reconnect... (${reconnectAttempts + 1}/${maxReconnectAttempts})`);
+                        reconnectTimeout = setTimeout(() => {
+                            reconnectAttempts++;
+                            connectWebSocket();
+                        }, 3000); // Wait 3 seconds before reconnecting
+                    } else {
+                        setConnectionError(true);
+                        console.log("Max reconnection attempts reached");
+                    }
+                }
+            };
+
+            socket.onerror = (error) => {
+                console.error("WebSocket error:", error);
+                setConnectionError(true);
+            };
+
+            return socket;
         };
 
-        socket.onclose = () => {
-            console.log("WebSocket disconnected");
-            setIsInterviewActive(false);
-            setConnectionError(true);
-        };
-
-        socket.onerror = (error) => {
-            console.error("WebSocket error:", error);
-            setConnectionError(true);
-            setIsInterviewActive(false);
-        };
-
+        const socket = connectWebSocket();
         setWs(socket);
+
         return () => {
+            if (reconnectTimeout) {
+                clearTimeout(reconnectTimeout);
+            }
             if (socket.readyState === WebSocket.OPEN) {
                 socket.send(JSON.stringify({
                     type: "end_interview"
