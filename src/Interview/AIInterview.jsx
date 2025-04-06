@@ -10,6 +10,25 @@ const AIInterview = () => {
     const [isInterviewActive, setIsInterviewActive] = useState(false);
     const [isListening, setIsListening] = useState(false);
     const [connectionError, setConnectionError] = useState(false);
+    const [speechError, setSpeechError] = useState(null);
+    const [isSpeaking, setIsSpeaking] = useState(false);
+
+    // Check for speech recognition support
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const hasSpeechSupport = !!SpeechRecognition;
+
+    // Cancel any ongoing speech
+    const cancelSpeech = () => {
+        window.speechSynthesis.cancel();
+        setIsSpeaking(false);
+    };
+
+    // Cleanup speech synthesis on unmount
+    useEffect(() => {
+        return () => {
+            cancelSpeech();
+        };
+    }, []);
 
     // Get Firebase Auth user
     useEffect(() => {
@@ -27,7 +46,7 @@ const AIInterview = () => {
         const connectWebSocket = () => {
             const wsUrl = window.location.hostname === 'localhost'
                 ? 'ws://localhost:3000/ws'
-                : `wss://${window.location.hostname}/ws`;
+                : 'wss://sanketkala-server.vercel.app/ws';
 
             console.log('Connecting to WebSocket at:', wsUrl);
             const socket = new WebSocket(wsUrl);
@@ -36,7 +55,6 @@ const AIInterview = () => {
                 console.log("WebSocket connected");
                 setConnectionError(false);
                 reconnectAttempts = 0;
-                // Start the interview when connection is established
                 socket.send(JSON.stringify({
                     type: "start_interview"
                 }));
@@ -49,6 +67,8 @@ const AIInterview = () => {
                     switch (response.type) {
                         case "ai_response":
                             setAiResponse(response.content);
+                            // Cancel any ongoing speech before starting new one
+                            cancelSpeech();
                             speak(response.content);
                             if (user) {
                                 saveToFirestore(user.email, "AI", response.content);
@@ -70,15 +90,15 @@ const AIInterview = () => {
             socket.onclose = (event) => {
                 console.log("WebSocket disconnected", event.code, event.reason);
                 setIsInterviewActive(false);
+                cancelSpeech(); // Cancel any ongoing speech when connection closes
                 
-                // Only attempt to reconnect if it wasn't a normal closure
                 if (event.code !== 1000 && event.code !== 1001) {
                     if (reconnectAttempts < maxReconnectAttempts) {
                         console.log(`Attempting to reconnect... (${reconnectAttempts + 1}/${maxReconnectAttempts})`);
                         reconnectTimeout = setTimeout(() => {
                             reconnectAttempts++;
                             connectWebSocket();
-                        }, 3000); // Wait 3 seconds before reconnecting
+                        }, 3000);
                     } else {
                         setConnectionError(true);
                         console.log("Max reconnection attempts reached");
@@ -107,54 +127,127 @@ const AIInterview = () => {
                 }));
                 socket.close();
             }
+            cancelSpeech(); // Cancel any ongoing speech when component unmounts
         };
     }, [user]);
 
+    // Request microphone permission
+    const requestMicrophonePermission = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            stream.getTracks().forEach(track => track.stop()); // Stop the stream after getting permission
+            setSpeechError(null);
+            return true;
+        } catch (error) {
+            console.error('Microphone permission error:', error);
+            setSpeechError('Please allow microphone access to use the interview feature.');
+            return false;
+        }
+    };
+
     // Speech recognition
-    const listenToUser = () => {
+    const listenToUser = async () => {
+        if (!hasSpeechSupport) {
+            setSpeechError('Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari.');
+            return;
+        }
+
         if (!isInterviewActive) {
             console.log("Interview not active");
             return;
         }
 
+        // Request microphone permission first
+        const hasPermission = await requestMicrophonePermission();
+        if (!hasPermission) return;
+
         setIsListening(true);
-        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        recognition.lang = "en-US";
-        recognition.continuous = false;
-        recognition.start();
+        setSpeechError(null);
 
-        recognition.onresult = (event) => {
-            const userSpeech = event.results[0][0].transcript;
-            setUserResponse(userSpeech);
-            
-            if (ws && ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({
-                    type: "user_speech",
-                    content: userSpeech
-                }));
-            }
+        try {
+            const recognition = new SpeechRecognition();
+            recognition.lang = "en-US";
+            recognition.continuous = false;
+            recognition.interimResults = false;
 
-            if (user) {
-                saveToFirestore(user.email, "User", userSpeech);
-            }
-        };
+            recognition.onstart = () => {
+                setIsListening(true);
+                setSpeechError(null);
+            };
 
-        recognition.onend = () => {
+            recognition.onresult = (event) => {
+                const userSpeech = event.results[0][0].transcript;
+                setUserResponse(userSpeech);
+                
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({
+                        type: "user_speech",
+                        content: userSpeech
+                    }));
+                }
+
+                if (user) {
+                    saveToFirestore(user.email, "User", userSpeech);
+                }
+            };
+
+            recognition.onend = () => {
+                setIsListening(false);
+            };
+
+            recognition.onerror = (event) => {
+                console.log("Speech recognition error:", event);
+                setIsListening(false);
+                switch (event.error) {
+                    case 'no-speech':
+                        setSpeechError('No speech was detected. Please try again.');
+                        break;
+                    case 'audio-capture':
+                        setSpeechError('No microphone was found. Please ensure your microphone is connected.');
+                        break;
+                    case 'not-allowed':
+                        setSpeechError('Microphone permission was denied. Please allow microphone access.');
+                        break;
+                    case 'network':
+                        setSpeechError('Network error occurred. Please check your internet connection.');
+                        break;
+                    default:
+                        setSpeechError('An error occurred with speech recognition. Please try again.');
+                }
+            };
+
+            recognition.start();
+        } catch (error) {
+            console.error('Speech recognition initialization error:', error);
             setIsListening(false);
-        };
-
-        recognition.onerror = (event) => {
-            console.log("Speech recognition error:", event);
-            setIsListening(false);
-        };
+            setSpeechError('Failed to initialize speech recognition. Please try again.');
+        }
     };
 
     // Text-to-Speech
     const speak = (text) => {
+        // Don't start new speech if already speaking
+        if (isSpeaking) {
+            return;
+        }
+
         const speech = new SpeechSynthesisUtterance(text);
         speech.lang = "en-US";
         speech.rate = 1;
         speech.pitch = 1;
+
+        speech.onstart = () => {
+            setIsSpeaking(true);
+        };
+
+        speech.onend = () => {
+            setIsSpeaking(false);
+        };
+
+        speech.onerror = () => {
+            setIsSpeaking(false);
+        };
+
         window.speechSynthesis.speak(speech);
     };
 
@@ -209,18 +302,39 @@ const AIInterview = () => {
             <div className="flex flex-col items-center justify-center text-center mt-8">
                 {user ? (
                     <>
-                        <button
-                            onClick={listenToUser}
-                            disabled={!isInterviewActive || isListening}
-                            className={`px-6 py-2 rounded-lg shadow-md transition duration-300 ${
-                                !isInterviewActive || isListening
-                                    ? "bg-gray-400 cursor-not-allowed"
-                                    : "bg-blue-500 hover:bg-blue-700 text-white"
-                            }`}
-                        >
-                            {isListening ? "Listening..." : "Speak"}
-                        </button>
-                        {!isInterviewActive && (
+                        {!hasSpeechSupport ? (
+                            <p className="text-red-600 mb-4">
+                                Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari.
+                            </p>
+                        ) : (
+                            <>
+                                <div className="flex gap-4">
+                                    <button
+                                        onClick={listenToUser}
+                                        disabled={!isInterviewActive || isListening}
+                                        className={`px-6 py-2 rounded-lg shadow-md transition duration-300 ${
+                                            !isInterviewActive || isListening
+                                                ? "bg-gray-400 cursor-not-allowed"
+                                                : "bg-blue-500 hover:bg-blue-700 text-white"
+                                        }`}
+                                    >
+                                        {isListening ? "Listening..." : "Speak"}
+                                    </button>
+                                    {isSpeaking && (
+                                        <button
+                                            onClick={cancelSpeech}
+                                            className="px-6 py-2 rounded-lg shadow-md transition duration-300 bg-red-500 hover:bg-red-700 text-white"
+                                        >
+                                            Stop AI Speaking
+                                        </button>
+                                    )}
+                                </div>
+                                {speechError && (
+                                    <p className="mt-4 text-red-600">{speechError}</p>
+                                )}
+                            </>
+                        )}
+                        {!isInterviewActive && !speechError && (
                             <div className="mt-4">
                                 {connectionError ? (
                                     <p className="text-red-600">Failed to connect to the interview server. Please try again later.</p>
