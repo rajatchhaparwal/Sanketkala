@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import React, { useState } from "react";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth, db } from "./firebase";
@@ -10,6 +10,7 @@ function SignUp() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleSignUp = async (e) => {
     e.preventDefault();
@@ -27,7 +28,7 @@ function SignUp() {
       });
 
       toast.success("Account created successfully!", { position: "top-center" });
-      window.location.href = "/getStarted";
+      navigate("/getStarted");
     } catch (error) {
       let errorMessage = "An error occurred during sign up.";
       
@@ -107,7 +108,6 @@ function SignUp() {
             disabled={isLoading}
           >
             {isLoading ? "Creating account..." : "Sign Up"}
-            <Link to={"/getStarted"} className="text-blue-400 hover:underline">Get Started</Link>
           </button>
     
           <div className="flex gap-1 mt-3">

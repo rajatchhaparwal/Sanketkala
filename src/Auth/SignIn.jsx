@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import React, { useState } from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import {auth} from './firebase'
@@ -8,6 +8,7 @@ function SignIn() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleOnSubmit = async (e) => {
     e.preventDefault();
@@ -16,7 +17,7 @@ function SignIn() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       toast.success("Signed in successfully!", { position: "top-center" });
-      window.location.href = "/getStarted";
+      navigate("/getStarted");
     } catch (error) {
       let errorMessage = "An error occurred during sign in.";
       
