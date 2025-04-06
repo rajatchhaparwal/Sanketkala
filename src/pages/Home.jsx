@@ -5,6 +5,7 @@ import Feutures  from '../components/Feutures';
 import HowItWorks from '../components/HowitWorks';
 import Testimonials from '../components/Testimonials'
 import Footer from '../components/Footer';
+import About from './About';
 
 export default function Home() {
   return (

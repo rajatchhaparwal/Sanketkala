@@ -38,7 +38,7 @@ const HowItWorks = () => {
           {steps.map((step, index) => (
             <div
               key={index}
-              className={`flex flex-col md:flex-row items-center gap-10 bg-white p-6 rounded-lg shadow-lg ${
+              className={`flex flex-col md:flex-row items-center gap-10 sm:w-full bg-white p-6 rounded-lg shadow-lg ${
                 index % 2 === 0 ? "md:flex-row" : "md:flex-row-reverse"
               }`}
             >
@@ -47,7 +47,7 @@ const HowItWorks = () => {
                 <img
                   src={step.image}
                   alt={step.title}
-                  className="max-w-lg sm:max-w-sm md:max-w-md rounded-lg shadow-md"
+                  className="rounded-lg shadow-md"
                 />
               </div>
               

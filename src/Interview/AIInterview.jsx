@@ -7,7 +7,8 @@ const AIInterview = () => {
     const [aiResponse, setAiResponse] = useState("");
     const [userResponse, setUserResponse] = useState("");
     const [user, setUser] = useState(null);
-    
+    const [isInterviewActive, setIsInterviewActive] = useState(false);
+    const [isListening, setIsListening] = useState(false);
 
     // Get Firebase Auth user
     useEffect(() => {
@@ -20,46 +21,95 @@ const AIInterview = () => {
     useEffect(() => {
         const socket = new WebSocket("ws://localhost:3000/ws");
 
-        socket.onopen = () => console.log("WebSocket connected");
-        socket.onmessage = (event) => {
-            setAiResponse("AI: " + event.data);
-            speak(event.data);
+        socket.onopen = () => {
+            console.log("WebSocket connected");
+            // Start the interview when connection is established
+            socket.send(JSON.stringify({
+                type: "start_interview"
+            }));
+            setIsInterviewActive(true);
+        };
 
-            // Save AI response to Firestore
-            if (user) {
-                saveToFirestore(user.email, "AI", event.data);
+        socket.onmessage = (event) => {
+            try {
+                const response = JSON.parse(event.data);
+                switch (response.type) {
+                    case "ai_response":
+                        setAiResponse(response.content);
+                        speak(response.content);
+                        if (user) {
+                            saveToFirestore(user.email, "AI", response.content);
+                        }
+                        break;
+                    case "status":
+                        console.log("Status:", response.content);
+                        break;
+                    case "error":
+                        console.error("Error:", response.content);
+                        break;
+                }
+            } catch (error) {
+                console.error("Error parsing WebSocket message:", error);
             }
         };
-        socket.onclose = () => console.log("WebSocket disconnected");
+
+        socket.onclose = () => {
+            console.log("WebSocket disconnected");
+            setIsInterviewActive(false);
+        };
+
+        socket.onerror = (error) => {
+            console.error("WebSocket error:", error);
+        };
 
         setWs(socket);
-        return () => socket.close();
+        return () => {
+            if (socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({
+                    type: "end_interview"
+                }));
+                socket.close();
+            }
+        };
     }, [user]);
-
-      
-
 
     // Speech recognition
     const listenToUser = () => {
+        if (!isInterviewActive) {
+            console.log("Interview not active");
+            return;
+        }
+
+        setIsListening(true);
         const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
         recognition.lang = "en-US";
         recognition.continuous = false;
         recognition.start();
-        setUserResponse("User: Hello, AI!");
-        setAiResponse("AI: Hi! Let's begin the interview.");
 
         recognition.onresult = (event) => {
             const userSpeech = event.results[0][0].transcript;
-            setUserResponse("User: " + userSpeech);
-            if (ws) ws.send(userSpeech);
+            setUserResponse(userSpeech);
+            
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                    type: "user_speech",
+                    content: userSpeech
+                }));
+            }
 
-            // Save user response to Firestore
             if (user) {
                 saveToFirestore(user.email, "User", userSpeech);
             }
         };
 
-        recognition.onerror = (event) => console.log("Speech recognition error:", event);
+        recognition.onend = () => {
+            setIsListening(false);
+        };
+
+        recognition.onerror = (event) => {
+            console.log("Speech recognition error:", event);
+            setIsListening(false);
+        };
     };
 
     // Text-to-Speech
@@ -87,49 +137,61 @@ const AIInterview = () => {
 
     return (
         <>
-        <div className="flex flex-col lg:flex-row justify-center gap-8 p-4 bg-gray-100">
-        {/* AI Interviewer Card */}
-        <div className="flex flex-col items-center justify-center">
-          <div className="bg-white max-w-xs md:max-w-sm lg:w-[400px] text-center shadow-lg rounded-lg p-6 w-full transition-transform duration-300 hover:shadow-xl hover:-translate-y-2">
-            <img
-              src="https://cdn-icons-png.flaticon.com/512/9165/9165147.png"
-              alt="AI Interviewer"
-              className="h-32 w-32 lg:h-40 lg:w-40 mx-auto rounded-md mb-4 animate-pulse"
-            />
-            <h2 className="text-xl lg:text-2xl font-semibold mb-4">AI Interviewer</h2>
-          </div>
-        </div>
-  
-        {/* User Card */}
-        <div className="flex flex-col items-center justify-center">
-          <div className="bg-white max-w-xs md:max-w-sm lg:w-[400px] text-center shadow-lg rounded-lg p-6 w-full transition-transform duration-300 hover:shadow-xl hover:-translate-y-2">
-            <img
-              src="https://randomuser.me/api/portraits/men/46.jpg"
-              alt="User"
-              className="h-32 w-32 lg:h-40 lg:w-40 mx-auto rounded-full mb-4"
-            />
-            <h2 className="text-xl lg:text-2xl font-semibold mb-4">User</h2>
-          </div>
-        </div>
-      </div>
-  
-      <div className="flex flex-col items-center justify-center text-center mt-">
-        {user ? (
-          <>
-            <button
-              onClick={listenToUser}
-              className="bg-blue-500 text-white px-6 py-2 rounded-lg shadow-md hover:bg-blue-700 transition duration-300"
-            >
-              Start Interview
-            </button>
-            <p className="mt-4 bg-gray-900 text-white px-4 py-2 rounded-lg">{userResponse}</p>
-            <p className="mt-2 bg-gray-700 text-white px-4 py-2 rounded-lg">{aiResponse}</p>
-          </>
-        ) : (
-          <p className="text-red-600 font-semibold">Please log in to start the interview.</p>
-        )}
-      </div>
-      </>
+            <div className="flex flex-col lg:flex-row justify-center gap-8 p-4 bg-gray-100">
+                {/* AI Interviewer Card */}
+                <div className="flex flex-col items-center justify-center">
+                    <div className="bg-white max-w-xs md:max-w-sm lg:w-[400px] text-center shadow-lg rounded-lg p-6 w-full transition-transform duration-300 hover:shadow-xl hover:-translate-y-2">
+                        <img
+                            src="https://cdn-icons-png.flaticon.com/512/9165/9165147.png"
+                            alt="AI Interviewer"
+                            className="h-32 w-32 lg:h-40 lg:w-40 mx-auto rounded-md mb-4 animate-pulse"
+                        />
+                        <h2 className="text-xl lg:text-2xl font-semibold mb-4">AI Interviewer</h2>
+                        <div className="bg-gray-100 p-4 rounded-lg min-h-[100px]">
+                            <p className="text-gray-800">{aiResponse}</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* User Card */}
+                <div className="flex flex-col items-center justify-center">
+                    <div className="bg-white max-w-xs md:max-w-sm lg:w-[400px] text-center shadow-lg rounded-lg p-6 w-full transition-transform duration-300 hover:shadow-xl hover:-translate-y-2">
+                        <img
+                            src="https://randomuser.me/api/portraits/men/46.jpg"
+                            alt="User"
+                            className="h-32 w-32 lg:h-40 lg:w-40 mx-auto rounded-full mb-4"
+                        />
+                        <h2 className="text-xl lg:text-2xl font-semibold mb-4">User</h2>
+                        <div className="bg-gray-100 p-4 rounded-lg min-h-[100px]">
+                            <p className="text-gray-800">{userResponse}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="flex flex-col items-center justify-center text-center mt-8">
+                {user ? (
+                    <>
+                        <button
+                            onClick={listenToUser}
+                            disabled={!isInterviewActive || isListening}
+                            className={`px-6 py-2 rounded-lg shadow-md transition duration-300 ${
+                                !isInterviewActive || isListening
+                                    ? "bg-gray-400 cursor-not-allowed"
+                                    : "bg-blue-500 hover:bg-blue-700 text-white"
+                            }`}
+                        >
+                            {isListening ? "Listening..." : "Speak"}
+                        </button>
+                        {!isInterviewActive && (
+                            <p className="mt-4 text-red-600">Please wait for the interview to start...</p>
+                        )}
+                    </>
+                ) : (
+                    <p className="text-red-600 font-semibold">Please log in to start the interview.</p>
+                )}
+            </div>
+        </>
     );
 };
 
