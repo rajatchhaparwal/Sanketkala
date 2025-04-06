@@ -7,19 +7,19 @@ const Getstarted = () => {
   const services = [
     {
       name: "Generate Resume",
-      value: "/GenerateResume",
+      value: "/generateResume",
       image:
         "https://img.freepik.com/premium-vector/resume-concept-woman-makes-resume-vector-illustration-flat_186332-971.jpg",
     },
     {
       name: "Take an Interview",
-      value: "/InterviewPage",
+      value: "/interview",
       image:
         "https://cdn.pixabay.com/photo/2023/09/23/09/02/interview-8270514_640.png",
     },
     {
       name: "Optimize LinkedIn Profile",
-      value: "linkedin",
+      value: "/linkedin",
       image:
         "https://img.freepik.com/free-vector/blog-post-concept-illustration_114360-164.jpg",
     },

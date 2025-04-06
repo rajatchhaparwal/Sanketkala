@@ -13,26 +13,24 @@ import SignUp from './Auth/SignUp';
 import GenerateResume from './ResumeGeneration/GenerateResume';
 import InterviewPage from './pages/InterviewPage';
 
-
-const App = () =>{
-
+const App = () => {
   return (
     <>
-    <BrowserRouter>
-    <Routes>
-      <Route path='/' element={<Home/>}/>
-      <Route path='/GetStarted' element={<Getstarted/>}/>
-      <Route path='/GenerateResume' element={<GenerateResume/>}/>
-      <Route path='/InterviewPage' element={<InterviewPage/>}/>
-      <Route path='/Contact' element={<Contact/>}/>
-      <Route path='/About' element={<About/>}/>
-      <Route path='/SignIn' element={<SignIn/>}/>
-      <Route path='/SignUp' element={<SignUp/>}/>
-    </Routes>
-    <ToastContainer />
-    </BrowserRouter>
+      <BrowserRouter>
+        <Routes>
+          <Route path='/' element={<Home/>}/>
+          <Route path='/getStarted' element={<Getstarted/>}/>
+          <Route path='/generateResume' element={<GenerateResume/>}/>
+          <Route path='/interview' element={<InterviewPage/>}/>
+          <Route path='/contact' element={<Contact/>}/>
+          <Route path='/about' element={<About/>}/>
+          <Route path='/signIn' element={<SignIn/>}/>
+          <Route path='/signUp' element={<SignUp/>}/>
+        </Routes>
+        <ToastContainer />
+      </BrowserRouter>
     </>
   )
 }
 
-export default App
+export default App;
