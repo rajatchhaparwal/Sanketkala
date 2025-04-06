@@ -11,12 +11,15 @@ const firebaseConfig = {
   storageBucket: "sanketkala-ffaa8.appspot.com",
   messagingSenderId: "735644292140",
   appId: "1:735644292140:web:306bc08317fa5c9d292d89",
-  measurementId: "G-0FNWS4HVPP",
+  measurementId: "G-0FNWS4HVPP"
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export default {app,db};
+// Initialize Authentication and Firestore
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+export { auth, db };
+export default app;
