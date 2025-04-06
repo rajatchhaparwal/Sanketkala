@@ -57,9 +57,7 @@ const AIInterview = () => {
         let reconnectTimeout;
 
         const connectWebSocket = () => {
-            const wsUrl = window.location.hostname === 'localhost'
-                ? 'ws://localhost:3000/ws'
-                : 'wss://sanketkala-server.vercel.app/ws';
+            const wsUrl = 'ws://localhost:3000/ws';
 
             console.log('Connecting to WebSocket at:', wsUrl);
             const socket = new WebSocket(wsUrl);
@@ -70,7 +68,8 @@ const AIInterview = () => {
                 reconnectAttempts = 0;
                 socket.send(JSON.stringify({
                     type: "start_interview",
-                    interviewType: type
+                    interviewType: type,
+                    userEmail: user.email // Add user email for tracking
                 }));
                 setIsInterviewActive(true);
             };
@@ -78,6 +77,7 @@ const AIInterview = () => {
             socket.onmessage = (event) => {
                 try {
                     const response = JSON.parse(event.data);
+                    console.log("Received message:", response); // Add logging
                     switch (response.type) {
                         case "ai_response":
                             setAiResponse(response.content);
@@ -94,6 +94,8 @@ const AIInterview = () => {
                             console.error("Error:", response.content);
                             setAiResponse(response.content);
                             break;
+                        default:
+                            console.log("Unknown message type:", response.type);
                     }
                 } catch (error) {
                     console.error("Error parsing WebSocket message:", error);
