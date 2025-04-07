@@ -1,92 +1,60 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
 const Getstarted = () => {
-  const navigate = useNavigate();
   const services = [
     {
       name: "Generate Resume",
-      value: "resume",
-      description: "Create a professional resume tailored to your experience and skills",
-      icon: (
-        <svg className="w-12 h-12 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-      )
+      description: "Create an AI-powered professional resume tailored to your target job and prepare for your interview",
+      value: "/generateResume",
+      image:
+        "https://img.freepik.com/premium-vector/resume-concept-woman-makes-resume-vector-illustration-flat_186332-971.jpg",
     },
     {
       name: "Take an Interview",
-      value: "interview",
-      description: "Practice with our AI interviewer for various tech roles",
-      icon: (
-        <svg className="w-12 h-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
-        </svg>
-      )
+      description: "Practice with our AI interviewer based on your generated resume to improve your skills",
+      value: "/interview",
+      image:
+        "https://cdn.pixabay.com/photo/2023/09/23/09/02/interview-8270514_640.png",
     },
     {
       name: "Optimize LinkedIn Profile",
-      value: "linkedin",
-      description: "Get tips to enhance your LinkedIn profile visibility",
-      icon: (
-        <svg className="w-12 h-12 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-        </svg>
-      )
-    }
+      description: "Get recommendations to make your LinkedIn profile stand out",
+      value: "/linkedin",
+      image:
+        "https://img.freepik.com/free-vector/blog-post-concept-illustration_114360-164.jpg",
+    },
   ];
-
-  const handleServiceClick = (value) => {
-    if (value === 'interview') {
-      navigate('/interviews');
-    } else if (value === 'resume') {
-      navigate('/GenerateResume');
-    } else if (value === 'linkedin') {
-      navigate('/linkedin');
-    }
-  };
 
   return (
     <>
       <Navbar />
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 py-16">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
-              Get Started with SanketKala
-            </h1>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Choose a service to begin your journey towards career success
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {services.map((service, index) => (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+        <div className="max-w-screen-lg w-full p-6 bg-white shadow-lg rounded-lg text-center">
+          <h1 className="text-2xl md:text-3xl font-bold mb-6">
+            Choose a Service to Begin
+          </h1>
+          <div className="grid md:grid-cols-3 gap-6">
+            {services.map((service) => (
               <div
-                key={index}
-                onClick={() => handleServiceClick(service.value)}
-                className="bg-white rounded-xl shadow-lg overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-2"
+                key={service.value}
+                className="bg-gray-200 p-4 rounded-lg shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
               >
-                <div className="p-8">
-                  <div className="flex justify-center mb-6">
-                    {service.icon}
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-800 mb-3 text-center">
-                    {service.name}
-                  </h3>
-                  <p className="text-gray-600 text-center">
-                    {service.description}
-                  </p>
-                </div>
-                <div className="px-8 pb-6">
-                  <button
-                    className="w-full py-2 px-4 bg-amber-500 hover:font-bold text-white rounded-lg font-semibold hover:opacity-90 transition-opacity duration-300"
-                  >
-                    Get Started
-                  </button>
-                </div>
+                <img
+                  src={service.image}
+                  alt={service.name}
+                  className="w-full h-40 lg:h-60 object-cover rounded-md mb-4 transition-transform duration-300 hover:scale-105"
+                />
+                <h3 className="text-lg font-semibold mb-2">{service.name}</h3>
+                <p className="text-gray-600 mb-4">{service.description}</p>
+                <Link
+                  to={service.value}
+                  className="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 active:scale-95 transition-all w-full block"
+                >
+                  Get Started
+                </Link>
               </div>
             ))}
           </div>
