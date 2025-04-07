@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Maker</title>
+    <style>
+        /* Basic Reset & Body Styling */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+            font-family: Arial, Helvetica, sans-serif;
+            line-height: 1.4;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Form Styling */
+        .input-form {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1em;
+        }
+
+        textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        /* Loading Indicator */
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .loading-spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Resume Styling */
+        #resume-container {
+            display: none;
+        }
+
+        /* A4 Page Simulation */
+        .a4-page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 15mm;
+            margin: 20px auto;
+            background-color: #ffffff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            box-sizing: border-box;
+        }
+
+        /* Header Section */
+        header {
+            text-align: left;
+            margin-bottom: 25px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #000;
+        }
+
+        header h1 {
+            font-size: 2.8em;
+            font-weight: bold;
+            margin: 0 0 5px 0;
+            color: #000;
+        }
+
+        header .professional-title {
+            font-size: 1.1em;
+            font-weight: normal;
+            margin: 0 0 10px 0;
+            color: #555;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        header .contact-info {
+            font-size: 0.9em;
+            margin: 0;
+            color: #333;
+        }
+
+        /* Section Styling */
+        section {
+            margin-bottom: 20px;
+        }
+
+        section h2 {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #000;
+            margin: 0 0 10px 0;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #000;
+        }
+
+        /* Objective Section */
+        #objective p {
+            margin-top: 5px;
+        }
+
+        /* Experience & Education Entries */
+        .job-entry,
+        .education-entry {
+            margin-bottom: 15px;
+        }
+
+        .entry-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 3px;
+        }
+
+        .entry-title {
+            font-size: 1em;
+        }
+
+        .entry-dates {
+            font-size: 0.9em;
+            font-weight: normal;
+            color: #333;
+            white-space: nowrap;
+            margin-left: 15px;
+        }
+
+        .entry-details { /* For Major/Minor */
+            font-size: 0.9em;
+            margin: 3px 0 0 0;
+            color: #555;
+        }
+
+        /* Unordered Lists */
+        ul {
+            list-style-type: disc;
+            padding-left: 20px;
+            margin: 5px 0 0 0;
+        }
+
+        li {
+            margin-bottom: 5px;
+            font-size: 0.95em;
+        }
+
+        /* Alert Messages */
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid transparent;
+            border-radius: 4px;
+        }
+
+        .alert-danger {
+            color: #721c24;
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+
+        /* Print Button */
+        .print-button {
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        /* Print-specific styles */
+        @media print {
+            body {
+                background-color: #ffffff;
+                margin: 0;
+                padding: 0;
+            }
+            .a4-page {
+                margin: 0;
+                padding: 10mm;
+                box-shadow: none;
+                width: 100%;
+                min-height: auto;
+                border: none;
+            }
+            .input-form, .loading, .print-button {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Resume Maker</h1>
+        
+        <div class="input-form">
+            <div class="form-group">
+                <label for="job-url">Job Posting URL:</label>
+                <input type="text" id="job-url" placeholder="Enter LinkedIn or other job posting URL">
+            </div>
+            <div class="form-group">
+                <label for="applicant-details">Applicant Details:</label>
+                <textarea id="applicant-details" placeholder="Enter your qualifications, experience, education, etc."></textarea>
+            </div>
+            <button id="generate-button">Generate Resume</button>
+            <div id="error-message" class="alert alert-danger" style="display: none;"></div>
+        </div>
+        
+        <div id="loading" class="loading">
+            <div class="loading-spinner"></div>
+            <p>Generating your resume... This may take a minute or two.</p>
+        </div>
+        
+        <div id="resume-container">
+            <div class="print-button">
+                <button id="print-button">Print Resume</button>
+            </div>
+            
+            <div class="resume-container a4-page">
+                <header>
+                    <h1 id="resume-name"></h1>
+                    <p id="professional-title" class="professional-title"></p>
+                    <p id="contact-info" class="contact-info"></p>
+                </header>
+
+                <section id="objective">
+                    <h2>Objective</h2>
+                    <p id="objective-text"></p>
+                </section>
+
+                <section id="experience">
+                    <h2>Experience</h2>
+                    <div id="experience-list"></div>
+                </section>
+
+                <section id="education">
+                    <h2>Education</h2>
+                    <div id="education-list"></div>
+                </section>
+
+                <section id="skills">
+                    <h2>Skills & abilities</h2>
+                    <ul id="skills-list"></ul>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const generateButton = document.getElementById('generate-button');
+            const printButton = document.getElementById('print-button');
+            const jobUrlInput = document.getElementById('job-url');
+            const applicantDetailsInput = document.getElementById('applicant-details');
+            const loadingDiv = document.getElementById('loading');
+            const resumeContainer = document.getElementById('resume-container');
+            const errorMessage = document.getElementById('error-message');
+
+            // Function to populate resume
+            function populateResume(data) {
+                // Populate Header
+                document.getElementById('resume-name').textContent = data.name;
+                document.getElementById('professional-title').textContent = data.professionalTitle;
+                document.getElementById('contact-info').textContent =
+                    `${data.contact.location} | ${data.contact.phone} | ${data.contact.email}`;
+
+                // Populate Objective
+                document.getElementById('objective-text').textContent = data.objective;
+
+                // Populate Experience
+                const experienceList = document.getElementById('experience-list');
+                experienceList.innerHTML = ''; // Clear existing content
+                data.experience.forEach(job => {
+                    const jobEntryDiv = document.createElement('div');
+                    jobEntryDiv.className = 'job-entry';
+
+                    const entryHeaderDiv = document.createElement('div');
+                    entryHeaderDiv.className = 'entry-header';
+
+                    const titleSpan = document.createElement('span');
+                    titleSpan.className = 'entry-title';
+                    titleSpan.innerHTML = `<strong>${job.company}</strong> | ${job.title}`;
+
+                    const datesSpan = document.createElement('span');
+                    datesSpan.className = 'entry-dates';
+                    datesSpan.textContent = job.dates;
+
+                    entryHeaderDiv.appendChild(titleSpan);
+                    entryHeaderDiv.appendChild(datesSpan);
+
+                    const descriptionUl = document.createElement('ul');
+                    job.description.forEach(point => {
+                        const li = document.createElement('li');
+                        li.textContent = point;
+                        descriptionUl.appendChild(li);
+                    });
+
+                    jobEntryDiv.appendChild(entryHeaderDiv);
+                    jobEntryDiv.appendChild(descriptionUl);
+                    experienceList.appendChild(jobEntryDiv);
+                });
+
+                // Populate Education
+                const educationList = document.getElementById('education-list');
+                educationList.innerHTML = ''; // Clear existing content
+                data.education.forEach(edu => {
+                    const eduEntryDiv = document.createElement('div');
+                    eduEntryDiv.className = 'education-entry';
+
+                    const entryHeaderDiv = document.createElement('div');
+                    entryHeaderDiv.className = 'entry-header';
+
+                    const titleSpan = document.createElement('span');
+                    titleSpan.className = 'entry-title';
+                    titleSpan.innerHTML = `<strong>${edu.institution}</strong>, ${edu.degree}`;
+
+                    const datesSpan = document.createElement('span');
+                    datesSpan.className = 'entry-dates';
+                    datesSpan.textContent = edu.dates;
+
+                    entryHeaderDiv.appendChild(titleSpan);
+                    entryHeaderDiv.appendChild(datesSpan);
+
+                    if (edu.details) {
+                        const detailsP = document.createElement('p');
+                        detailsP.className = 'entry-details';
+                        detailsP.textContent = edu.details;
+                        eduEntryDiv.appendChild(detailsP);
+                    }
+
+                    eduEntryDiv.appendChild(entryHeaderDiv);
+                    educationList.appendChild(eduEntryDiv);
+                });
+
+                // Populate Skills
+                const skillsList = document.getElementById('skills-list');
+                skillsList.innerHTML = ''; // Clear existing content
+                data.skills.forEach(skill => {
+                    const li = document.createElement('li');
+                    li.textContent = skill;
+                    skillsList.appendChild(li);
+                });
+            }
+
+            // Generate Resume button click handler
+            generateButton.addEventListener('click', async () => {
+                const jobUrl = jobUrlInput.value.trim();
+                const applicantDetails = applicantDetailsInput.value.trim();
+
+                // Input validation
+                if (!jobUrl || !applicantDetails) {
+                    errorMessage.textContent = "Please fill in both the job URL and applicant details.";
+                    errorMessage.style.display = "block";
+                    return;
+                }
+
+                // Hide error message if previously shown
+                errorMessage.style.display = "none";
+                
+                // Show loading spinner
+                loadingDiv.style.display = "block";
+                
+                // Disable button while processing
+                generateButton.disabled = true;
+                
+                try {
+                    const response = await fetch('/generate_resume', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            job_url: jobUrl,
+                            applicant_details: applicantDetails,
+                        }),
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        // Populate the resume with the data
+                        populateResume(result.resume);
+                        
+                        // Show the resume container
+                        resumeContainer.style.display = "block";
+                        
+                        // Scroll to the resume
+                        resumeContainer.scrollIntoView({ behavior: 'smooth' });
+                    } else {
+                        // Show error message
+                        errorMessage.textContent = result.error || "An error occurred while generating the resume.";
+                        errorMessage.style.display = "block";
+                    }
+                } catch (error) {
+                    // Show error message
+                    errorMessage.textContent = "An error occurred while communicating with the server.";
+                    errorMessage.style.display = "block";
+                    console.error('Error:', error);
+                } finally {
+                    // Hide loading spinner
+                    loadingDiv.style.display = "none";
+                    
+                    // Re-enable button
+                    generateButton.disabled = false;
+                }
+            });
+
+            // Print button click handler
+            printButton.addEventListener('click', () => {
+                window.print();
+            });
+        });
+    </script>
+</body>
+</html> 

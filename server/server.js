@@ -23,6 +23,27 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
 
+// Proxy endpoint for resume maker
+app.post('/api/resume', async (req, res) => {
+  try {
+    const { linkedin, jobUrl, applicantDetails } = req.body;
+    
+    // Forward the request to Flask app
+    const response = await axios.post('http://localhost:5000/generate_resume', {
+      job_url: jobUrl,
+      applicant_details: applicantDetails || linkedin
+    });
+    
+    return res.json(response.data);
+  } catch (error) {
+    console.error('Error proxying to resume service:', error);
+    return res.status(500).json({ 
+      success: false, 
+      error: "Failed to generate resume. Please try again." 
+    });
+  }
+});
+
 const wss = new WebSocketServer({ 
   server,
   path: "/ws",
@@ -36,25 +57,6 @@ let activeConnections = 0;
 
 // Store interview context for each connection
 const interviewContexts = new Map();
-
-// Store interview questions for different types
-const interviewQuestions = {
-    'full-stack-interview': [
-        "Tell me about your experience with full-stack development.",
-        "What's your preferred tech stack and why?",
-        "Explain how you would design a scalable web application.",
-        "How do you handle state management in your applications?",
-        "Describe a challenging project you worked on."
-    ],
-    'front-end-development-interview': [
-        "What are your favorite frontend frameworks?",
-        "How do you optimize website performance?",
-        "Explain the concept of responsive design.",
-        "How do you handle cross-browser compatibility issues?",
-        "What's your approach to CSS organization?"
-    ],
-    // Add more interview types as needed
-};
 
 // Ping all clients every 30 seconds to keep connections alive
 setInterval(() => {
@@ -82,9 +84,7 @@ wss.on("connection", (ws, req) => {
     const context = {
         messages: [],
         isInterviewActive: false,
-        lastPing: Date.now(),
-        currentQuestionIndex: 0,
-        currentInterviewType: null
+        lastPing: Date.now()
     };
     interviewContexts.set(ws, context);
 
@@ -110,15 +110,10 @@ wss.on("connection", (ws, req) => {
                 case "start_interview":
                     context.isInterviewActive = true;
                     context.messages = [];
-                    context.currentInterviewType = data.interviewType;
-                    const questions = interviewQuestions[data.interviewType] || interviewQuestions['full-stack-interview'];
-                    
-                    // Send first question
                     ws.send(JSON.stringify({
                         type: "ai_response",
-                        content: `Welcome to your ${data.interviewType.replace(/-/g, ' ')}! ${questions[0]}`
+                        content: "Hello! I'm your AI interviewer. Let's begin. Could you please introduce yourself and tell me what position you're interviewing for?"
                     }));
-                    context.currentQuestionIndex = 1;
                     break;
 
                 case "user_speech":
@@ -133,23 +128,29 @@ wss.on("connection", (ws, req) => {
                     console.log("User said:", content);
                     context.messages.push({ role: "user", content });
 
-                    // Get questions for current interview type
-                    const questionsForInterview = interviewQuestions[context.currentInterviewType] || interviewQuestions['full-stack-interview'];
-                    
-                    if (context.currentQuestionIndex < questionsForInterview.length) {
-                        // Send next question
-                        setTimeout(() => {
-                            ws.send(JSON.stringify({
-                                type: "ai_response",
-                                content: questionsForInterview[context.currentQuestionIndex]
-                            }));
-                            context.currentQuestionIndex++;
-                        }, 1000); // Add a small delay to make it feel more natural
-                    } else {
-                        // Interview finished
+                    const analysisPrompt = `You are an AI interviewer. The candidate said: "${content}". 
+                    Provide constructive feedback and ask a relevant follow-up question. Keep your response concise and natural.
+                    Previous context: ${JSON.stringify(context.messages.slice(-3))}`;
+
+                    try {
+                        const geminiResponse = await axios.post(
+                            `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`,
+                            { contents: [{ parts: [{ text: analysisPrompt }] }] },
+                            { headers: { "Content-Type": "application/json" } }
+                        );
+
+                        const aiFeedback = geminiResponse.data?.candidates?.[0]?.content?.parts?.[0]?.text || "Could you please repeat that?";
+                        context.messages.push({ role: "assistant", content: aiFeedback });
+                        
                         ws.send(JSON.stringify({
                             type: "ai_response",
-                            content: "Thank you for completing the interview! You did well. Is there anything else you'd like to discuss?"
+                            content: aiFeedback
+                        }));
+                    } catch (error) {
+                        console.error("Error fetching AI response:", error);
+                        ws.send(JSON.stringify({
+                            type: "error",
+                            content: "I'm having trouble understanding. Could you please repeat that?"
                         }));
                     }
                     break;

@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Resume</title>
+    <style>
+        /* Basic Reset & Body Styling */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0; /* Light grey background to see the page */
+            font-family: Arial, Helvetica, sans-serif;
+            line-height: 1.4;
+            color: #333;
+        }
+
+        /* A4 Page Simulation */
+        .a4-page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 15mm;
+            margin: 20px auto;
+            background-color: #ffffff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            box-sizing: border-box;
+        }
+
+        /* Header Section */
+        header {
+            text-align: left;
+            margin-bottom: 25px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #000;
+        }
+
+        header h1 {
+            font-size: 2.8em;
+            font-weight: bold;
+            margin: 0 0 5px 0;
+            color: #000;
+        }
+
+        header .professional-title {
+            font-size: 1.1em;
+            font-weight: normal;
+            margin: 0 0 10px 0;
+            color: #555;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        header .contact-info {
+            font-size: 0.9em;
+            margin: 0;
+            color: #333;
+        }
+
+        /* Section Styling */
+        section {
+            margin-bottom: 20px;
+        }
+
+        section h2 {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #000;
+            margin: 0 0 10px 0;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #000;
+        }
+
+        /* Objective Section */
+        #objective p {
+            margin-top: 5px;
+        }
+
+        /* Experience & Education Entries */
+        .job-entry,
+        .education-entry {
+            margin-bottom: 15px;
+        }
+
+        .entry-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 3px;
+        }
+
+        .entry-title {
+            font-size: 1em;
+        }
+
+        .entry-dates {
+            font-size: 0.9em;
+            font-weight: normal;
+            color: #333;
+            white-space: nowrap;
+            margin-left: 15px;
+        }
+
+        .entry-details { /* For Major/Minor */
+            font-size: 0.9em;
+            margin: 3px 0 0 0;
+            color: #555;
+        }
+
+        /* Unordered Lists */
+        ul {
+            list-style-type: disc;
+            padding-left: 20px;
+            margin: 5px 0 0 0;
+        }
+
+        li {
+            margin-bottom: 5px;
+            font-size: 0.95em;
+        }
+
+        /* --- Placeholders for dynamic content --- */
+        #experience-list, #education-list, #skills-list {
+            /* No specific styles needed here, just targets for JS */
+        }
+
+
+        /* Print-specific styles */
+        @media print {
+            body {
+                background-color: #ffffff;
+                margin: 0;
+                padding: 0;
+            }
+            .a4-page {
+                margin: 0;
+                padding: 10mm;
+                box-shadow: none;
+                width: 100%;
+                min-height: auto;
+                border: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="resume-container a4-page">
+        <header>
+            <!-- Placeholders for dynamic header content -->
+            <h1 id="resume-name"></h1>
+            <p id="professional-title" class="professional-title"></p>
+            <p id="contact-info" class="contact-info"></p>
+        </header>
+
+        <section id="objective">
+            <h2>Objective</h2>
+            <!-- Placeholder for dynamic objective -->
+            <p id="objective-text"></p>
+        </section>
+
+        <section id="experience">
+            <h2>Experience</h2>
+            <!-- Container for dynamic experience entries -->
+            <div id="experience-list"></div>
+        </section>
+
+        <section id="education">
+            <h2>Education</h2>
+            <!-- Container for dynamic education entries -->
+            <div id="education-list"></div>
+        </section>
+
+        <section id="skills">
+            <h2>Skills & abilities</h2>
+            <!-- Container for dynamic skills -->
+            <ul id="skills-list"></ul>
+        </section>
+    </div>
+
+    <script>
+        // --- Resume Data (JSON Format) ---
+        // In a real application, you might fetch this from a 'resume.json' file
+        const resumeData = {
+    "name": "Rohan Verma",
+    "professionalTitle": "Lead Software Engineer - Big Data & Cloud",
+    "contact": {
+        "location": "Indore, MP",
+        "phone": "(123) 456-7890",
+        "email": "rohan.verma.data@email.com"
+    },
+    "objective": "Results-driven Lead Software Engineer with 10 years of experience designing, developing, and optimizing large-scale Big Data solutions and Cloud pipelines. Expertise in PySpark (DataFrame & SparkSQL), Hadoop, Hive, Python, SQL, AWS, Azure, and Databricks. Proven ability to lead teams, develop cost-effective ETL pipelines, perform integration testing, manage on-premise to cloud migrations, and drive technical excellence. Seeking to leverage extensive Big Data and Cloud skills in a challenging Lead role at Knack Consulting Services.",
+    "experience": [
+        {
+            "company": "FinTech Solutions Inc.",
+            "title": "Tech Lead - Big Data & Cloud",
+            "dates": "2019 \u2013 Present",
+            "description": [
+                "Led a team of 5 engineers, designing and developing scalable ETL pipelines on AWS and Databricks using PySpark (DataFrame & SparkSQL).",
+                "Architected cost-effective Cloud pipelines with AWS Glue and Databricks Jobs, reducing processing time by 35%.",
+                "Spearheaded on-premise Hadoop to AWS cloud migration, achieving improved scalability and 20% cost savings.",
+                "Performed comprehensive integration testing for cloud-based data pipelines.",
+                "Provided accurate estimates for development, testing, and deployment cycles within an Agile framework.",
+                "Established coding standards and conducted code peer reviews for PySpark and SQL.",
+                "Optimized Spark and Hive performance and cost-effectiveness on AWS and Databricks.",
+                "Utilized Apache Airflow for job scheduling and workflow orchestration."
+            ]
+        },
+        {
+            "company": "DataAnalytics Corp",
+            "title": "Senior Software Engineer - Big Data",
+            "dates": "2016 \u2013 2019",
+            "description": [
+                "Developed Big Data processing pipelines using PySpark, Hive, and Hadoop.",
+                "Designed data models adhering to Data Warehouse concepts using Hive.",
+                "Wrote complex SQL and HiveQL queries for data extraction and transformation (ETL).",
+                "Contributed to performance tuning of Spark applications on the Hadoop cluster.",
+                "Participated in evaluating cloud Big Data technologies (AWS)."
+            ]
+        },
+        {
+            "company": "InfoSystems Ltd",
+            "title": "Software Engineer",
+            "dates": "2013 \u2013 2016",
+            "description": [
+                "Developed backend systems using Python and SQL (MySQL, PostgreSQL).",
+                "Gained foundational experience with Hadoop and Hive through internal projects.",
+                "Worked within the full software development lifecycle using Agile methodologies."
+            ]
+        }
+    ],
+    "education": [
+        {
+            "institution": "[Name of University/College]",
+            "degree": "Bachelor of Technology (B.Tech) in Computer Science & Engineering",
+            "dates": "2013",
+            "details": ""
+        }
+    ],
+    "skills": [
+        "Big Data Technologies: Apache Spark (PySpark - DataFrame API, SparkSQL), Hadoop (HDFS, YARN), Hive, Kafka",
+        "Cloud Platforms: AWS (EMR, Glue, S3, Redshift, Lambda, Athena), Databricks (Delta Lake, Notebooks, Jobs), Azure (ADF, Azure Databricks, Synapse)",
+        "Programming & Databases: Python (Expert), SQL (Expert), Scala (Proficient), Bash, PostgreSQL, MySQL, Data Warehouse Concepts",
+        "Tools & Concepts: ETL Pipeline Development, Apache Airflow (Job Scheduler), Git, Docker, Integration Testing, Code Peer Reviews, Cost Optimization, Performance Tuning, Data Modeling, Agile/Scrum",
+        "Analytical Skills, Problem-Solving, Data Analysis"
+    ]
+};
+
+        // --- Function to Populate Resume ---
+        function populateResume(data) {
+            // Populate Header
+            document.getElementById('resume-name').textContent = data.name;
+            document.getElementById('professional-title').textContent = data.professionalTitle;
+            document.getElementById('contact-info').textContent =
+                `${data.contact.location} | ${data.contact.phone} | ${data.contact.email}`;
+
+            // Populate Objective
+            document.getElementById('objective-text').textContent = data.objective;
+
+            // Populate Experience
+            const experienceList = document.getElementById('experience-list');
+            experienceList.innerHTML = ''; // Clear existing content
+            data.experience.forEach(job => {
+                const jobEntryDiv = document.createElement('div');
+                jobEntryDiv.className = 'job-entry';
+
+                const entryHeaderDiv = document.createElement('div');
+                entryHeaderDiv.className = 'entry-header';
+
+                const titleSpan = document.createElement('span');
+                titleSpan.className = 'entry-title';
+                titleSpan.innerHTML = `<strong>${job.company}</strong> | ${job.title}`; // Use innerHTML for strong tag
+
+                const datesSpan = document.createElement('span');
+                datesSpan.className = 'entry-dates';
+                datesSpan.textContent = job.dates;
+
+                entryHeaderDiv.appendChild(titleSpan);
+                entryHeaderDiv.appendChild(datesSpan);
+
+                const descriptionUl = document.createElement('ul');
+                job.description.forEach(point => {
+                    const li = document.createElement('li');
+                    li.textContent = point;
+                    descriptionUl.appendChild(li);
+                });
+
+                jobEntryDiv.appendChild(entryHeaderDiv);
+                jobEntryDiv.appendChild(descriptionUl);
+                experienceList.appendChild(jobEntryDiv);
+            });
+
+            // Populate Education
+            const educationList = document.getElementById('education-list');
+            educationList.innerHTML = ''; // Clear existing content
+            data.education.forEach(edu => {
+                const eduEntryDiv = document.createElement('div');
+                eduEntryDiv.className = 'education-entry';
+
+                const entryHeaderDiv = document.createElement('div');
+                entryHeaderDiv.className = 'entry-header';
+
+                const titleSpan = document.createElement('span');
+                titleSpan.className = 'entry-title';
+                titleSpan.innerHTML = `<strong>${edu.institution}</strong>, ${edu.degree}`; // Use innerHTML for strong tag
+
+                const datesSpan = document.createElement('span');
+                datesSpan.className = 'entry-dates';
+                datesSpan.textContent = edu.dates;
+
+                entryHeaderDiv.appendChild(titleSpan);
+                entryHeaderDiv.appendChild(datesSpan);
+
+                const detailsP = document.createElement('p');
+                detailsP.className = 'entry-details';
+                detailsP.textContent = edu.details;
+
+                eduEntryDiv.appendChild(entryHeaderDiv);
+                eduEntryDiv.appendChild(detailsP);
+                educationList.appendChild(eduEntryDiv);
+            });
+
+            // Populate Skills
+            const skillsList = document.getElementById('skills-list');
+            skillsList.innerHTML = ''; // Clear existing content
+            data.skills.forEach(skill => {
+                const li = document.createElement('li');
+                li.textContent = skill;
+                skillsList.appendChild(li);
+            });
+        }
+
+        // --- Execute Population on Page Load ---
+        // Ensures the DOM is fully loaded before trying to manipulate it
+        document.addEventListener('DOMContentLoaded', () => {
+            populateResume(resumeData);
+        });
+
+    </script>
+</body>
+</html>

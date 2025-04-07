@@ -11,8 +11,7 @@ import About from './pages/About';
 import SignIn from './Auth/SignIn';
 import SignUp from './Auth/SignUp';
 import GenerateResume from './ResumeGeneration/GenerateResume';
-import InterviewPage from './Interview/InterviewPage';
-import AIInterview from './Interview/AIInterview';
+import InterviewPage from './pages/InterviewPage';
 
 const App = () => {
   return (
@@ -27,8 +26,6 @@ const App = () => {
           <Route path='/about' element={<About/>}/>
           <Route path='/signIn' element={<SignIn/>}/>
           <Route path='/signUp' element={<SignUp/>}/>
-          <Route path="/interviews" element={<InterviewPage />} />
-          <Route path="/interview/:type" element={<AIInterview />} />
         </Routes>
         <ToastContainer />
       </BrowserRouter>
